@@ -1,0 +1,466 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4">
+	<External>null</External>
+	<External>nil</External>
+	<Item class="Script" referent="RBX440EE2113E074565A1C69E447652B15D">
+		<Properties>
+			<bool name="Disabled">false</bool>
+			<Content name="LinkedSource">
+				<null></null>
+			</Content>
+			<string name="Name">Sound</string>
+			<ProtectedString name="Source"><![CDATA[---This server script creates the sounds and also exists so that it can be easily copied into an NPC and create sounds for that NPC. 
+--Remove the local script if you copy this into an NPC.
+
+function waitForChild(parent, childName)
+	local child = parent:findFirstChild(childName)
+	if child then return child end
+	while true do
+		child = parent.ChildAdded:wait()
+		if child.Name==childName then return child end
+	end
+end
+
+function newSound(name, id)
+	local sound = Instance.new("Sound")
+	sound.SoundId = id
+	sound.Name = name
+	sound.archivable = false
+	sound.Parent = script.Parent.Head
+	return sound
+end
+
+-- declarations
+
+local sGettingUp = newSound("GettingUp", "ayaasset://sounds/action_get_up.mp3")
+local sDied = newSound("Died", "ayaasset://sounds/uuhhh.mp3") 
+local sFreeFalling = newSound("FreeFalling", "ayaasset://sounds/action_falling.mp3")
+local sJumping = newSound("Jumping", "ayaasset://sounds/action_jump.mp3")
+local sLanding = newSound("Landing", "ayaasset://sounds/action_jump_land.mp3")
+local sSplash = newSound("Splash", "ayaasset://sounds/impact_water.mp3")
+local sRunning = newSound("Running", "ayaasset://sounds/action_footsteps_plastic.mp3")
+sRunning.Looped = true
+local sSwimming = newSound("Swimming", "ayaasset://sounds/action_swim.mp3")
+sSwimming.Looped = true
+local sClimbing = newSound("Climbing", "ayaasset://sounds/action_footsteps_plastic.mp3")
+sClimbing.Looped = true
+
+local classic_sFallingDown = newSound("classic_FallingDown", "ayaasset://sounds/splat.mp3")
+local classic_sFreeFalling = newSound("classic_FreeFalling", "ayaasset://sounds/swoosh.mp3")
+local classic_sGettingUp = newSound("classic_GettingUp", "ayaasset://sounds/hit.mp3")
+local classic_sJumping = newSound("classic_Jumping", "ayaasset://sounds/button.mp3")
+local classic_sRunning = newSound("classic_Running", "ayaasset://sounds/bfsl-minifigfoots1.mp3")
+classic_sRunning.Looped = true
+
+local GameSettings = UserSettings().GameSettings
+local useClassicSounds = GameSettings.VirtualVersion == Enum.VirtualVersion['2012'] or GameSettings.VirtualVersion == Enum.VirtualVersion['2013'] 
+
+local Figure = script.Parent
+local Head = waitForChild(Figure, "Head")
+local Humanoid = waitForChild(Figure, "Humanoid")
+local hasPlayer = game.Players:GetPlayerFromCharacter(script.Parent)
+local filteringEnabled = game.Workspace.FilteringEnabled
+
+local prevState = "None"
+
+-- functions
+
+function onDied()
+	stopLoopedSounds()
+	sDied:Play()
+end
+
+local fallCount = 0
+local fallSpeed = 0
+function onStateFall(state, sound)
+	fallCount = fallCount + 1
+	if state then
+		sound.Volume = 0
+		sound:Play()
+		Spawn( function()
+			local t = 0
+			local thisFall = fallCount
+			while t < 1.5 and fallCount == thisFall do
+				local vol = math.max(t - 0.3 , 0)
+				sound.Volume = vol
+				wait(0.1)
+				t = t + 0.1
+			end
+		end)
+	else
+		sound:Stop()
+	end
+	fallSpeed = math.max(fallSpeed, math.abs(Head.Velocity.Y))
+end
+
+
+function onStateNoStop(state, sound)
+	if state then
+		sound:Play()
+	end
+end
+
+
+function onRunning(speed)
+	if useClassicSounds then
+		if speed > 0.01 then
+			classic_sRunning:Play()
+		else
+			classic_sRunning:Pause()
+		end
+
+		return
+	end
+
+	sClimbing:Stop()
+	sSwimming:Stop()
+	if (prevState == "FreeFall" and fallSpeed > 0.1) then
+		local vol = math.min(1.0, math.max(0.0, (fallSpeed - 50) / 110))
+		sLanding.Volume = vol
+		sLanding:Play()
+		fallSpeed = 0
+	end
+	if speed>0.5 then
+		sRunning:Play()
+		sRunning.Pitch = speed / 8.0
+	else
+		sRunning:Stop()
+	end
+	prevState = "Run"
+end
+
+function onSwimming(speed)
+	if (prevState ~= "Swim" and speed > 0.1) then
+		local volume = math.min(1.0, speed / 350)
+		sSplash.Volume = volume
+		sSplash:Play()
+		prevState = "Swim"
+	end
+	sClimbing:Stop()
+	sRunning:Stop()
+	sSwimming.Pitch = 1.6
+	sSwimming:Play()
+end
+
+function onClimbing(speed)
+	sRunning:Stop()
+	sSwimming:Stop()	
+	if speed>0.01 then
+		sClimbing:Play()
+		sClimbing.Pitch = speed / 5.5
+	else
+		sClimbing:Stop()
+	end
+	prevState = "Climb"
+end
+-- connect up
+
+function stopLoopedSounds()
+	sRunning:Stop() 
+	sClimbing:Stop()
+	sSwimming:Stop()
+end
+
+function onState(state, sound)
+	if state then
+		sound:Play()
+	end
+end
+
+if hasPlayer == nil then
+	Humanoid.Died:connect(onDied)
+	Humanoid.Running:connect(onRunning)
+	Humanoid.Swimming:connect(onSwimming)
+	Humanoid.Climbing:connect(onClimbing)
+	Humanoid.Jumping:connect(function(state)
+		if useClassicSounds then
+			onState(state, classic_sJumping)
+		else
+			onStateNoStop(state, sJumping)
+			prevState = "Jump"
+		end
+	end)
+
+	Humanoid.GettingUp:connect(function(state)
+		if useClassicSounds then
+			onState(state, classic_sGettingUp)
+		else
+			stopLoopedSounds()
+			onStateNoStop(state, sGettingUp)
+			prevState = "GetUp"
+		end
+	end)
+
+	Humanoid.FreeFalling:connect(function(state)
+		if useClassicSounds then
+			onState(state, classic_sFreeFalling)
+
+			if classic_sJumping.IsPlaying then
+				classic_sJumping:Stop()
+			end
+		else
+			stopLoopedSounds()
+			onStateFall(state, sFreeFalling)
+			prevState = "FreeFall"
+		end
+	end)
+
+	Humanoid.FallingDown:connect(function(state)
+		if useClassicSounds then
+			onState(state, classic_sFallingDown)
+		else
+			stopLoopedSounds()
+		end
+	end)
+
+	Humanoid.StateChanged:connect(function(old, new) 
+		if not (new.Name == "Dead" or 
+				new.Name == "Running" or 
+				new.Name == "RunningNoPhysics" or 
+				new.Name == "Swimming" or 
+				new.Name == "Jumping" or 
+				new.Name == "GettingUp" or 
+				new.Name == "Freefall" or 
+				new.Name == "FallingDown") and not useClassicSounds then
+			stopLoopedSounds()
+		end
+	end)
+
+	GameSettings.Changed:connect(function(property)
+		if property == "VirtualVersion" then
+			useClassicSounds = GameSettings.VirtualVersion == Enum.VirtualVersion['2012'] or GameSettings.VirtualVersion == Enum.VirtualVersion['2013'] 
+			if useClassicSounds then
+				stopLoopedSounds()
+			end
+		end
+	end)
+end
+]]>			</ProtectedString>
+		</Properties>
+		<Item class="LocalScript" referent="RBXACC3E7AAF68642CC9341039CBCE06F78">
+			<Properties>
+				<bool name="Disabled">false</bool>
+				<Content name="LinkedSource">
+					<null></null>
+				</Content>
+				<string name="Name">LocalSound</string>
+				<ProtectedString name="Source"><![CDATA[--This local script will run only for the player whos character it is in. It's changes to the sounds will replicate as they are changes to the character.
+-- util
+
+function waitForChild(parent, childName)
+	local child = parent:findFirstChild(childName)
+	if child then return child end
+	while true do
+		child = parent.ChildAdded:wait()
+		if child.Name==childName then return child end
+	end
+end
+
+
+-- declarations
+
+local Figure = script.Parent.Parent
+local Head = waitForChild(Figure, "Head")
+local Humanoid = waitForChild(Figure, "Humanoid")
+
+local sGettingUp = waitForChild(Head, "GettingUp")
+local sDied = waitForChild(Head, "Died") 
+local sFreeFalling = waitForChild(Head, "FreeFalling")
+local sJumping = waitForChild(Head, "Jumping")
+local sLanding = waitForChild(Head, "Landing")
+local sSplash = waitForChild(Head, "Splash")
+local sRunning = waitForChild(Head, "Running")
+sRunning.Looped = true
+local sSwimming = waitForChild(Head, "Swimming")
+sSwimming.Looped = true
+local sClimbing =waitForChild(Head, "Climbing")
+sClimbing.Looped = true
+
+local classic_sFallingDown = waitForChild(Head, "classic_FallingDown")
+local classic_sFreeFalling = waitForChild(Head, "classic_FreeFalling")
+local classic_sGettingUp = waitForChild(Head, "classic_GettingUp")
+local classic_sJumping = waitForChild(Head, "classic_Jumping")
+local classic_sRunning = waitForChild(Head, "classic_Running")
+classic_sRunning.Looped = true
+
+local GameSettings = UserSettings().GameSettings
+local useClassicSounds = GameSettings.VirtualVersion == Enum.VirtualVersion['2012'] or GameSettings.VirtualVersion == Enum.VirtualVersion['2013'] 
+
+local prevState = "None"
+
+-- functions
+
+function onDied()
+	stopLoopedSounds()
+	sDied:Play()
+end
+
+local fallCount = 0
+local fallSpeed = 0
+function onStateFall(state, sound)
+	fallCount = fallCount + 1
+	if state then
+		sound.Volume = 0
+		sound:Play()
+		Spawn( function()
+			local t = 0
+			local thisFall = fallCount
+			while t < 1.5 and fallCount == thisFall do
+				local vol = math.max(t - 0.3 , 0)
+				sound.Volume = vol
+				wait(0.1)
+				t = t + 0.1
+			end
+		end)
+	else
+		sound:Stop()
+	end
+	fallSpeed = math.max(fallSpeed, math.abs(Head.Velocity.Y))
+end
+
+
+function onStateNoStop(state, sound)
+	if state then
+		sound:Play()
+	end
+end
+
+
+function onRunning(speed)
+	if useClassicSounds then
+		if speed > 0.01 then
+			classic_sRunning:Play()
+		else
+			classic_sRunning:Pause()
+		end
+
+		return
+	end
+
+	sClimbing:Stop()
+	sSwimming:Stop()
+	if (prevState == "FreeFall" and fallSpeed > 0.1) then
+		local vol = math.min(1.0, math.max(0.0, (fallSpeed - 50) / 110))
+		sLanding.Volume = vol
+		sLanding:Play()
+		fallSpeed = 0
+	end
+	if speed>0.5 then
+		sRunning:Play()
+		sRunning.Pitch = speed / 8.0
+	else
+		sRunning:Stop()
+	end
+	prevState = "Run"
+end
+
+function onSwimming(speed)
+	if (prevState ~= "Swim" and speed > 0.1) then
+		local volume = math.min(1.0, speed / 350)
+		sSplash.Volume = volume
+		sSplash:Play()
+		prevState = "Swim"
+	end
+	sClimbing:Stop()
+	sRunning:Stop()
+	sSwimming.Pitch = 1.6
+	sSwimming:Play()
+end
+
+function onClimbing(speed)
+	sRunning:Stop()
+	sSwimming:Stop()	
+	if speed>0.01 then
+		sClimbing:Play()
+		sClimbing.Pitch = speed / 5.5
+	else
+		sClimbing:Stop()
+	end
+	prevState = "Climb"
+end
+-- connect up
+
+function stopLoopedSounds()
+	sRunning:Stop() 
+	sClimbing:Stop()
+	sSwimming:Stop()
+end
+
+function onState(state, sound)
+	if state then
+		sound:Play()
+	end
+end
+
+Humanoid.Died:connect(onDied)
+Humanoid.Running:connect(onRunning)
+Humanoid.Swimming:connect(onSwimming)
+Humanoid.Climbing:connect(onClimbing)
+Humanoid.Jumping:connect(function(state)
+	if useClassicSounds then
+		onState(state, classic_sJumping)
+	else
+		onStateNoStop(state, sJumping)
+		prevState = "Jump"
+	end
+end)
+
+Humanoid.GettingUp:connect(function(state)
+	if useClassicSounds then
+		onState(state, classic_sGettingUp)
+	else
+		stopLoopedSounds()
+		onStateNoStop(state, sGettingUp)
+		prevState = "GetUp"
+	end
+end)
+
+Humanoid.FreeFalling:connect(function(state)
+	if useClassicSounds then
+		if classic_sJumping.IsPlaying then
+			classic_sJumping:Stop()
+		end
+
+		onState(state, classic_sFreeFalling)
+	else
+		stopLoopedSounds()
+		onStateFall(state, sFreeFalling)
+		prevState = "FreeFall"
+	end
+end)
+
+Humanoid.FallingDown:connect(function(state)
+	if useClassicSounds then
+		onState(state, classic_sFallingDown)
+	else
+		stopLoopedSounds()
+	end
+end)
+
+Humanoid.StateChanged:connect(function(old, new) 
+	if not (new.Name == "Dead" or 
+			new.Name == "Running" or 
+			new.Name == "RunningNoPhysics" or 
+			new.Name == "Swimming" or 
+			new.Name == "Jumping" or 
+			new.Name == "GettingUp" or 
+			new.Name == "Freefall" or 
+			new.Name == "FallingDown") and not useClassicSounds then
+		stopLoopedSounds()
+	end
+end)
+
+GameSettings.Changed:connect(function(property)
+	if property == "VirtualVersion" then
+		useClassicSounds = GameSettings.VirtualVersion == Enum.VirtualVersion['2012'] or GameSettings.VirtualVersion == Enum.VirtualVersion['2013'] 
+		if useClassicSounds then
+			stopLoopedSounds()
+		end
+	end
+end)
+
+]]>				</ProtectedString>
+			</Properties>
+		</Item>
+	</Item>
+</roblox>

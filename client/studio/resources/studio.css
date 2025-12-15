@@ -1,0 +1,57 @@
+QAbstractItemView
+{
+    border: 1px solid #b6b6b6;
+}
+
+QAbstractItemView::item:hover 
+{
+    background: #e7d9fd;
+}
+
+QAbstractItemView::item:selected:active
+{
+    background: #9d66f7;
+}
+
+
+/* Setting the TabBar's left and right arrow's background color explicitly because the Qt default is transparent
+   which looks incorrect when overlapping tabs. */
+QTabBar QToolButton
+{
+    background: #EEEEEE;
+}
+
+QTabBar
+{
+    background: #f2f2f2;
+}
+
+QDockWidget::title
+{
+   background: #e3e3e3;
+   text-align: center;
+   border: 1px solid #b6b6b6;
+}
+QTabBar::tab
+{
+    border: 1px solid #b6b6b6;
+    border-bottom: 0;
+    background: #f2f2f2;
+    padding-left: 14px;
+    padding-right: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+}
+
+QTabBar::tab:selected {
+    background: #fff;
+    padding-top: 2px;
+}
+QTabBar::tab:hover {
+    background: #e7d9fd;
+}
+QTabBar::tab:selected:hover {
+    background: #fff;
+}

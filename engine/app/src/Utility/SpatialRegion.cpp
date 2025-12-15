@@ -1,0 +1,29 @@
+
+
+#include "Utility/SpatialRegion.hpp"
+
+#include "Voxel/Cell.hpp"
+
+namespace Aya
+{
+
+namespace SpatialRegion
+{
+
+std::size_t hash_value(const Id& key)
+{
+    Id::boost_compatible_hash_value hash;
+    return hash(key);
+}
+
+namespace _PrivateConstants
+{
+const Vector3int16 kRegionDimensionInStudsAsBitShifts(
+    getRegionDimensionInVoxelsAsBitShifts() +
+    Vector3int16(Voxel::kCELL_SIZE_AS_BIT_SHIFT, Voxel::kCELL_SIZE_AS_BIT_SHIFT, Voxel::kCELL_SIZE_AS_BIT_SHIFT));
+
+}
+
+} // namespace SpatialRegion
+
+} // namespace Aya

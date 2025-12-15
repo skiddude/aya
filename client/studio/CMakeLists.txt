@@ -1,0 +1,225 @@
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+add_executable(Studio
+  src/main.cpp
+  resources/qt.qrc
+
+  src/AddEmulationDeviceDialog.cpp
+  src/AddEmulationDeviceDialog.hpp
+  src/AuthenticationHelper.cpp
+  src/AuthenticationHelper.hpp
+  src/AuthoringSettings.cpp
+  src/AuthoringSettings.hpp
+  src/AutoSaveDialog.cpp
+  src/AutoSaveDialog.hpp
+  src/CommonInsertWidget.cpp
+  src/CommonInsertWidget.hpp
+  src/CSGOperations.cpp
+  src/CSGOperations.hpp
+  src/DebuggerClient.cpp
+  src/DebuggerClient.hpp
+  src/DebuggerWidgets.cpp
+  src/DebuggerWidgets.hpp
+  src/DocDockManager.cpp
+  src/DocDockManager.hpp
+  src/DocDockWidget.cpp
+  src/DocDockWidget.hpp
+  src/DocTabManager.cpp
+  src/DocTabManager.hpp
+  src/ExternalHandlers.cpp
+  src/ExternalHandlers.hpp
+  src/FindDialog.cpp
+  src/FindDialog.hpp
+  src/FunctionMarshaller.cpp
+  src/FunctionMarshaller.hpp
+  src/GalleryItemColor.cpp
+  src/GalleryItemColor.hpp
+  src/IExternalHandler.hpp
+  src/InsertObjectListWidget.cpp
+  src/InsertObjectListWidget.hpp
+  src/InsertObjectListWidgetItem.cpp
+  src/InsertObjectListWidgetItem.hpp
+  src/InsertServiceDialog.cpp
+  src/InsertServiceDialog.hpp
+  src/IRobloxDoc.hpp
+  src/KeepSavedChangesDialog.cpp
+  src/KeepSavedChangesDialog.hpp
+  src/LogProvider.cpp
+  src/LogProvider.hpp
+  src/LuaSourceBuffer.cpp
+  src/LuaSourceBuffer.hpp
+  src/ManageEmulationDeviceDialog.cpp
+  src/ManageEmulationDeviceDialog.hpp
+  src/NameValueStoreManager.cpp
+  src/NameValueStoreManager.hpp
+  src/ogrewidget.cpp
+  src/ogrewidget.hpp
+  src/PluginAction.hpp
+  src/PropertyItems.cpp
+  src/PropertyItems.hpp
+  src/QDirBoundProp.hpp
+  src/QFontBoundProp.hpp
+  src/QtUtilities.cpp
+  src/QtUtilities.hpp
+  src/RbxContent.cpp
+  src/RbxContent.hpp
+  src/RbxWorkspace.cpp
+  src/RbxWorkspace.hpp
+  src/RenderStatsItem.cpp
+  src/RenderStatsItem.hpp
+  src/Roblox.cpp
+  src/Roblox.hpp
+  src/RobloxApplicationManager.cpp
+  src/RobloxApplicationManager.hpp
+  src/RobloxBasicDoc.cpp
+  src/RobloxBasicDoc.hpp
+  src/RobloxBrowser.cpp
+  src/RobloxBrowser.hpp
+  src/RobloxCookieJar.cpp
+  src/RobloxCookieJar.hpp
+  src/RobloxCustomWidgets.cpp
+  src/RobloxCustomWidgets.hpp
+  src/RobloxDiagnosticsView.cpp
+  src/RobloxDiagnosticsView.hpp
+  src/RobloxDocManager.cpp
+  src/RobloxDocManager.hpp
+  src/RobloxFindWidget.cpp
+  src/RobloxFindWidget.hpp
+  src/RobloxGameExplorer.cpp
+  src/RobloxGameExplorer.hpp
+  src/RobloxIDEDoc.cpp
+  src/RobloxIDEDoc.hpp
+  src/RobloxInputConfigDialog.cpp
+  src/RobloxInputConfigDialog.hpp
+  src/RobloxKeyboardConfig.cpp
+  src/RobloxKeyboardConfig.hpp
+  src/RobloxMainWindow.cpp
+  src/RobloxMainWindow.hpp
+  src/RobloxMouseConfig.cpp
+  src/RobloxMouseConfig.hpp
+  src/RobloxNetworkAccessManager.cpp
+  src/RobloxNetworkAccessManager.hpp
+  src/RobloxNetworkReply.cpp
+  src/RobloxNetworkReply.hpp
+  src/RobloxObjectBrowserDoc.cpp
+  src/RobloxObjectBrowserDoc.hpp
+  src/RobloxPluginHost.cpp
+  src/RobloxPluginHost.hpp
+  src/RobloxPropertyWidget.cpp
+  src/RobloxPropertyWidget.hpp
+  src/RobloxQuickAccessConfig.cpp
+  src/RobloxQuickAccessConfig.hpp
+  src/RobloxReportView.cpp
+  src/RobloxReportView.hpp
+  src/RobloxRibbonMainWindow.cpp
+  src/RobloxRibbonMainWindow.hpp
+  src/RobloxSavingStateDialog.cpp
+  src/RobloxSavingStateDialog.hpp
+  src/RobloxScriptDoc.cpp
+  src/RobloxScriptDoc.hpp
+  src/RobloxScriptReview.cpp
+  src/RobloxScriptReview.hpp
+  src/RobloxSettings.cpp
+  src/RobloxSettings.hpp
+  src/RobloxSettingsDialog.cpp
+  src/RobloxSettingsDialog.hpp
+  src/RobloxStudioVerbs.cpp
+  src/RobloxStudioVerbs.hpp
+  src/RobloxStudioVersion.hpp
+  src/RobloxTabWidget.hpp
+  src/RobloxTaskScheduler.cpp
+  src/RobloxTaskScheduler.hpp
+  src/RobloxTextOutputWidget.cpp
+  src/RobloxTextOutputWidget.hpp
+  src/RobloxToolBox.cpp
+  src/RobloxToolBox.hpp
+  src/RobloxTreeWidget.cpp
+  src/RobloxTreeWidget.hpp
+  src/RobloxUser.cpp
+  src/RobloxUser.hpp
+  src/RobloxView.cpp
+  src/RobloxView.hpp
+  src/RobloxWebDoc.cpp
+  src/RobloxWebDoc.hpp
+  src/RobloxWebPage.cpp
+  src/RobloxWebPage.hpp
+  src/ScopedDebugTimer.hpp
+  src/ScriptAnalysisWidget.cpp
+  src/ScriptAnalysisWidget.hpp
+  src/ScriptComboBox.cpp
+  src/ScriptComboBox.hpp
+  src/ScriptPickerDialog.cpp
+  src/ScriptPickerDialog.hpp
+  src/ScriptSideWidget.cpp
+  src/ScriptSideWidget.hpp
+  src/ScriptSyntaxHighlighter.cpp
+  src/ScriptSyntaxHighlighter.hpp
+  src/ScriptTextEditor.cpp
+  src/ScriptTextEditor.hpp
+  src/SelectionHighlightAdornable.cpp
+  src/SelectionHighlightAdornable.hpp
+  src/ShortcutHelpDialog.cpp
+  src/ShortcutHelpDialog.hpp
+  src/SplineEditor.cpp
+  src/SplineEditor.hpp
+  src/stdafx.cpp
+  src/stdafx.hpp
+  src/StudioDeviceEmulator.cpp
+  src/StudioDeviceEmulator.hpp
+  src/StudioIntellesense.cpp
+  src/StudioIntellesense.hpp
+  src/StudioMacUtilities.hpp
+  src/StudioSerializerHelper.cpp
+  src/StudioSerializerHelper.hpp
+  src/StudioUtilities.cpp
+  src/StudioUtilities.hpp
+  src/UpdateUIManager.cpp
+  src/UpdateUIManager.hpp
+  src/UserInput.cpp
+  src/UserInput.hpp
+  src/UserInputUtil.cpp
+  src/UserInputUtil.hpp
+  src/WebDialog.cpp
+  src/WebDialog.hpp
+  ${CLIENT_DIR}/common/AppSettings.cpp
+  ${CLIENT_DIR}/common/AppSettings.hpp
+  ${CLIENT_DIR}/common/GrayChatBar.hpp
+  ${CLIENT_DIR}/common/GrayChatBar.cpp
+  ${CLIENT_DIR}/common/SDLGameController.cpp
+  ${CLIENT_DIR}/common/SDLGameController.hpp
+)
+
+target_link_libraries(Studio
+  3D
+  AppStudio
+  Core
+  RakNet
+  BulletPhysics
+  NetworkStudio
+  Graphics
+  QtitanRibbon
+)
+
+if(AYA_OS_WINDOWS)
+  target_sources(Studio PRIVATE
+    resources/winrc.h
+    resources/script.rc
+  )
+
+  set_target_properties(Studio PROPERTIES WIN32_EXECUTABLE TRUE)
+  windeployqt(Studio)
+endif()
+
+target_compile_definitions(Studio PRIVATE QT_NO_KEYWORDS)
+
+target_include_directories(Studio PRIVATE src resources)
+set_target_properties(Studio PROPERTIES OUTPUT_NAME "Aya.Studio")
+
+add_custom_command(TARGET Studio POST_BUILD
+  COMMENT "Copying runtime files to build directory"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${RUNTIME_FILES}"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+)

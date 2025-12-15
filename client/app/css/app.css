@@ -1,0 +1,252 @@
+@import url("./fonts.css");
+@import url("./icons.css");
+
+@tailwind base;
+@tailwind utilities;
+@tailwind components;
+
+@layer base {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 100ms;
+  }
+}
+
+@layer components {
+  .aya-anim-pop:active:hover:not(:disabled),
+  .aya-anim-pop:active:focus:not(:disabled) {
+    transform: scale(0.97);
+    animation: button-pop 0s ease-out;
+  }
+
+  .aya-page-btn {
+    @apply aya-anim-pop flex cursor-default items-center justify-center duration-100;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid transparent;
+    transition-property: border, border-top, background-color, border-bottom;
+  }
+
+  .aya-page-btn:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .aya-page-btn-selected {
+    @apply aya-page-btn;
+    background-color: rgba(255, 255, 255);
+    border: 1px solid rgba(0, 0, 0, 0.065) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.122) !important;
+  }
+
+  .aya-page-btn-selected:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.065) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.105) !important;
+  }
+
+  [data-mode="dark"] {
+    .aya-page-btn:hover {
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid transparent !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+    }
+
+    .aya-page-btn-selected {
+      background-color: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.03) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+    }
+
+    .aya-page-btn-selected:hover {
+      background-color: rgba(255, 255, 255, 0.075);
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.025) !important;
+    }
+  }
+
+  @keyframes hue-rotate {
+    0% {
+      filter: hue-rotate(0deg);
+    }
+    100% {
+      filter: hue-rotate(360deg);
+    }
+  }
+
+  .aya-bg-rainbow {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .aya-bg-rainbow::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, theme("colors.indigo.500") 0%, theme("colors.red.500") 100%);
+    animation: hue-rotate 20s linear infinite;
+  }
+
+  .aya-bg-rainbow > * {
+    position: relative;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .aya-anim-pop:active:hover:not(:disabled),
+    .aya-anim-pop:active:focus:not(:disabled) {
+      animation: button-pop 0.25s ease-out;
+    }
+  }
+
+  .aya-btn-sm {
+    @apply !h-8 !min-h-8 !px-3 !text-base;
+  }
+
+  .aya-btn-xs {
+    @apply !h-6 !min-h-6 !px-2 !text-sm;
+  }
+
+  .aya-btn-lg {
+    @apply !h-[3rem] !min-h-[3rem] !px-4;
+  }
+
+  .aya-btn-green {
+    @apply !bg-green-600/85 hover:!bg-green-600;
+  }
+
+  .aya-btn-link-sm {
+    @apply !px-1 !py-0;
+  }
+
+  .aya-btn-alt {
+    @apply !bg-aya-700 hover:!bg-aya-800;
+  }
+
+  /* AppLayout */
+  .aya-nav-link {
+    @apply aya-anim-pop me-1 rounded-lg px-3 py-2 text-white text-opacity-50 transition duration-200 hover:bg-white/10 hover:text-opacity-100 hover:shadow-sm focus:text-white active:bg-white/20 dark:hover:bg-black/20;
+  }
+
+  .aya-nav-link:not(.aya-nav-link-selected) {
+    @apply focus:bg-aya-400/75 dark:focus:bg-aya-600/75;
+  }
+
+  .aya-nav-link-sm {
+    @apply aya-anim-pop me-1 rounded-lg px-2 py-1 text-white text-opacity-50 transition duration-200 hover:bg-white/5 hover:text-opacity-100 focus:bg-white/10 focus:text-white active:bg-white/10;
+  }
+
+  .aya-nav-link-selected {
+    @apply bg-aya-600/75 text-opacity-100 hover:bg-aya-600 dark:bg-aya-600/50 dark:hover:bg-aya-600/75;
+  }
+
+  .aya-nav-link-sm.aya-nav-link-selected {
+    @apply bg-white/10 text-opacity-100;
+  }
+
+  .aya-footer-link {
+    @apply aya-anim-pop flex-grow rounded-lg bg-transparent px-2 py-2 text-center text-xl opacity-35 transition duration-200 hover:bg-white hover:bg-opacity-10 hover:opacity-100 hover:shadow-md;
+  }
+
+  .aya-games-genre-list {
+    @apply aya-anim-pop ms-3 rounded-md px-2 py-0.5 text-start text-neutral-600 transition duration-200 hover:bg-black/10 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-neutral-200;
+  }
+
+  .aya-games-sort-list {
+    @apply aya-anim-pop ms-3 rounded-md px-2 py-0.5 text-start text-neutral-600 transition duration-200 hover:bg-black/10 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-neutral-200;
+  }
+
+  .aya-limited-label,
+  .aya-limited-unique-label,
+  .aya-limited-label-lg,
+  .aya-limited-unique-label-lg {
+    background-image: url("../img/itemlabels.svg");
+    background-repeat: no-repeat;
+    background-size: auto auto;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .aya-limited-label,
+  .aya-limited-unique-label {
+    width: 70px;
+    height: 15px;
+  }
+
+  .aya-limited-unique-label {
+    background-position: 0 -18px;
+  }
+
+  .aya-limited-label {
+    background-position: 0 0;
+  }
+
+  .aya-limited-label-lg,
+  .aya-limited-unique-label-lg {
+    width: 105px;
+    height: 22px;
+    background-size: 105px auto;
+  }
+
+  .aya-limited-unique-label-lg {
+    background-position: 0 -26px;
+  }
+
+  .aya-limited-label-lg {
+    background-position: 0 0;
+  }
+
+  .aya-character-body-selector div {
+    background-color: white;
+  }
+
+  /* character body */
+  /* ugly! */
+  .body-head {
+    width: 60px;
+    height: 60px;
+    border-radius: 3px;
+    display: block;
+    margin-left: 72px;
+    margin-bottom: 4px;
+  }
+
+  .body-torso {
+    width: 100px;
+    height: 100px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .body-left-arm,
+  .body-right-arm {
+    display: inline-block;
+  }
+
+  .body-left-leg,
+  .body-right-leg {
+    display: inline-block;
+    width: 49px !important;
+    margin-top: -4px;
+  }
+
+  .body-left-arm,
+  .body-right-arm {
+    width: 49px;
+  }
+
+  .body-left-arm,
+  .body-right-arm,
+  .body-left-leg,
+  .body-right-leg {
+    height: 100px;
+    border-radius: 3px;
+  }
+
+  .body-left-leg {
+    margin-left: 52px;
+  }
+}

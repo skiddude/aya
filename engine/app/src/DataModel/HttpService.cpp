@@ -1,0 +1,240 @@
+
+
+#include "DataModel/HttpService.hpp"
+#include "DataModel/DataModel.hpp"
+#include "DataModel/Workspace.hpp"
+#include "DataModel/Stats.hpp"
+#include "Xml/WebParser.hpp"
+#include "Players.hpp"
+#include "Utility/Http.hpp"
+
+DYNAMIC_FASTINTVARIABLE(UserHttpRequestsPerMinuteLimit, 500)
+
+namespace Aya
+{
+const char* const sHttpService = "HttpService";
+
+
+static Reflection::BoundYieldFuncDesc<HttpService, std::string(std::string, bool, Reflection::Variant)> userHttpGetAsyncFunction(
+    &HttpService::userHttpGetAsync, "GetAsync", "url", "nocache", false, "headers", Reflection::Variant(), Security::None);
+static Reflection::BoundYieldFuncDesc<HttpService, std::string(std::string, std::string, HttpService::HttpContentType, bool, Reflection::Variant)>
+    userHttpPostAsyncFunction(&HttpService::userHttpPostAsync, "PostAsync", "url", "data", "content_type", HttpService::APPLICATION_JSON, "compress",
+        false, "headers", Reflection::Variant(), Security::None);
+static Reflection::BoundFuncDesc<HttpService, Reflection::Variant(std::string)> decodeJSON(
+    &HttpService::decodeJSON, "JSONDecode", "input", Security::None);
+static Reflection::BoundFuncDesc<HttpService, std::string(Reflection::Variant)> encodeJSON(
+    &HttpService::encodeJSON, "JSONEncode", "input", Security::None);
+static Reflection::BoundFuncDesc<HttpService, std::string(std::string)> urlEncode(&HttpService::urlEncode, "UrlEncode", "input", Security::None);
+static Reflection::BoundFuncDesc<HttpService, std::string(bool)> generateGuid(
+    &HttpService::generateGuid, "GenerateGUID", "wrapInCurlyBraces", true, Security::None);
+
+Reflection::BoundProp<bool> HttpService::prop_httpEnabled(
+    "HttpEnabled", category_Data, &HttpService::httpEnabled, Reflection::PropertyDescriptor::STANDARD, Security::LocalUser);
+REFLECTION_END();
+
+namespace Reflection
+{
+template<>
+EnumDesc<HttpService::HttpContentType>::EnumDesc()
+    : EnumDescriptor("HttpContentType")
+{
+    addPair(HttpService::APPLICATION_JSON, "ApplicationJson");
+    addPair(HttpService::APPLICATION_XML, "ApplicationXml");
+    addPair(HttpService::APPLICATION_URLENCODED, "ApplicationUrlEncoded");
+    addPair(HttpService::TEXT_PLAIN, "TextPlain");
+    addPair(HttpService::TEXT_XML, "TextXml");
+}
+
+template<>
+HttpService::HttpContentType& Variant::convert<HttpService::HttpContentType>(void)
+{
+    return genericConvert<HttpService::HttpContentType>();
+}
+} // namespace Reflection
+
+template<>
+bool StringConverter<HttpService::HttpContentType>::convertToValue(const std::string& text, HttpService::HttpContentType& value)
+{
+    return Reflection::EnumDesc<HttpService::HttpContentType>::singleton().convertToValue(text.c_str(), value);
+}
+
+HttpService::HttpService()
+    : httpEnabled(false)
+    , throttle(&DFInt::UserHttpRequestsPerMinuteLimit)
+{
+    setName(sHttpService);
+}
+
+bool HttpService::checkEverything(std::string& url, boost::function<void(std::string)> errorFunction)
+{
+    if (url.size() == 0)
+    {
+        errorFunction("Empty URL");
+        return false;
+    }
+
+    if (!httpEnabled)
+    {
+        errorFunction("Http requests are not enabled");
+        return false;
+    }
+
+    if (!Network::Players::backendProcessing(this))
+    {
+        errorFunction("Http requests can only be executed by game server");
+        return false;
+    }
+
+    if (Instance::fastDynamicCast<DataModel>(getParent()) == NULL)
+    {
+        errorFunction("Unrecognized HttpService");
+        return false;
+    }
+
+    if (!throttle.checkLimit())
+    {
+        errorFunction("Number of requests exceeded limit");
+        return false;
+    }
+    return true;
+}
+
+void HttpService::addIdHeader(Http& request)
+{
+    DataModel* dm = DataModel::get(this);
+    request.additionalHeaders["Roblox-Id"] = Aya::StringConverter<int>::convertToString(dm->getPlaceID());
+}
+
+void HttpService::userHttpPostAsync(std::string url, std::string data, HttpContentType contentType, bool compress, Reflection::Variant headers,
+    boost::function<void(std::string)> resumeFunction, boost::function<void(std::string)> errorFunction)
+{
+    if (!checkEverything(url, errorFunction))
+        return;
+
+    Http http(url);
+    std::string contentTypeName;
+    switch (contentType)
+    {
+    case APPLICATION_JSON:
+        contentTypeName = Http::kContentTypeApplicationJson;
+        break;
+    case APPLICATION_XML:
+        contentTypeName = Http::kContentTypeApplicationXml;
+        break;
+    case APPLICATION_URLENCODED:
+        contentTypeName = Http::kContentTypeUrlEncoded;
+        break;
+    case TEXT_PLAIN:
+        contentTypeName = Http::kContentTypeTextPlain;
+        break;
+    case TEXT_XML:
+        contentTypeName = Http::kContentTypeTextXml;
+        break;
+    default:
+        errorFunction("Unsupported content type");
+        return;
+    }
+
+    if (data.length() == 0)
+        data = " ";
+    addIdHeader(http);
+
+    if (headers.isType<shared_ptr<const Reflection::ValueTable>>())
+    {
+        shared_ptr<const Reflection::ValueTable> headersTable = headers.cast<shared_ptr<const Reflection::ValueTable>>();
+        for (Reflection::ValueTable::const_iterator iter = headersTable->begin(); iter != headersTable->end(); ++iter)
+        {
+            std::string key = iter->first;
+            if (iter->second.isType<std::string>())
+            {
+                std::string value = iter->second.cast<std::string>();
+                http.additionalHeaders[key] = value;
+            }
+        }
+    }
+
+    http.post(data, contentTypeName, compress, boost::bind(&DataModel::HttpHelper, _1, _2, resumeFunction, errorFunction), true);
+}
+
+void HttpService::userHttpGetAsync(std::string url, bool nocache, Reflection::Variant headers, boost::function<void(std::string)> resumeFunction,
+    boost::function<void(std::string)> errorFunction)
+{
+    if (!checkEverything(url, errorFunction))
+        return;
+
+    Http http(url);
+    if (nocache)
+    {
+        http.additionalHeaders["Cache-Control"] = "no-cache";
+        http.doNotUseCachedResponse = true;
+    }
+
+    addIdHeader(http);
+
+    // add headers
+    if (headers.isType<shared_ptr<const Reflection::ValueTable>>())
+    {
+        shared_ptr<const Reflection::ValueTable> headersTable = headers.cast<shared_ptr<const Reflection::ValueTable>>();
+        for (Reflection::ValueTable::const_iterator iter = headersTable->begin(); iter != headersTable->end(); ++iter)
+        {
+            std::string key = iter->first;
+            if (iter->second.isType<std::string>())
+            {
+                std::string value = iter->second.cast<std::string>();
+                http.additionalHeaders[key] = value;
+            }
+        }
+    }
+
+    http.get(boost::bind(&DataModel::HttpHelper, _1, _2, resumeFunction, errorFunction), true);
+}
+
+Reflection::Variant HttpService::decodeJSON(std::string input)
+{
+    Reflection::Variant value;
+    if (WebParser::parseJSONObject(input, value))
+    {
+        return value;
+    }
+    else
+    {
+        throw std::runtime_error("Can't parse JSON");
+    }
+}
+
+std::string HttpService::encodeJSON(Reflection::Variant obj)
+{
+    std::string result;
+
+    if (obj.isType<shared_ptr<const Reflection::ValueTable>>() || obj.isType<shared_ptr<const Reflection::ValueArray>>())
+    {
+        if (!WebParser::writeJSON(obj, result))
+        {
+            throw std::runtime_error("Can't convert to JSON");
+        }
+    }
+    else
+        throw std::runtime_error("Can't convert to JSON");
+
+    return result;
+}
+
+std::string HttpService::urlEncode(std::string data)
+{
+    return Http::urlEncode(data);
+}
+
+std::string HttpService::generateGuid(bool wrapInCurlyBraces)
+{
+    std::string result;
+    Guid::generateStandardGUID(result);
+
+    if (!wrapInCurlyBraces)
+    {
+        AYAASSERT(result.size() > 2);
+        result = result.substr(1, result.size() - 2);
+    }
+
+    return result;
+}
+} // namespace Aya

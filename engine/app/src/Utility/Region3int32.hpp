@@ -1,0 +1,34 @@
+
+#pragma once
+
+#include "Utility/Vector3int32.hpp"
+
+namespace Aya
+{
+
+class Region3int32
+{
+private:
+    Vector3int32 minPos;
+    Vector3int32 maxPos;
+
+public:
+    Region3int32();
+    Region3int32(const Vector3int32& min, const Vector3int32& max);
+
+    ~Region3int32() {}
+
+    Vector3int32 getMinPos() const;
+    Vector3int32 getMaxPos() const;
+
+    inline bool operator==(const Region3int32& other) const
+    {
+        return (minPos == other.minPos) && (maxPos == other.maxPos);
+    }
+
+    inline bool operator!=(const Region3int32& other) const
+    {
+        return !(*this == other);
+    }
+};
+} // namespace Aya

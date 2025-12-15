@@ -1,0 +1,1 @@
+#include "../ribbon/QtnRibbonGallery.h"

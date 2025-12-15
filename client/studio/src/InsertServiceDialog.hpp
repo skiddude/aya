@@ -1,0 +1,55 @@
+
+
+#pragma once
+
+#include <QDialog>
+
+#include <boost/shared_ptr.hpp>
+#include "DataModel/DataModel.hpp"
+
+
+#include "RobloxMainWindow.hpp"
+
+class InsertObjectListWidget;
+class QListWidgetItem;
+namespace Aya
+{
+class SelectionChanged;
+}
+
+class InsertServiceDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    InsertServiceDialog(QWidget* pParentWidget);
+    virtual ~InsertServiceDialog();
+
+    void setDataModel(boost::shared_ptr<Aya::DataModel> pDataModel);
+
+    bool isAvailable();
+
+public Q_SLOTS:
+    void updateWidget(bool state);
+    /*override*/ void setVisible(bool visible);
+
+private Q_SLOTS:
+    void onAccepted();
+    void onItemInsertRequested(QListWidgetItem* item);
+    void onItemSelectionChanged();
+    void redrawDialog();
+
+private:
+    void onInstanceSelectionChanged(const Aya::SelectionChanged& evt);
+    void requestDialogRedraw();
+
+    void recreateWidget();
+
+    boost::shared_ptr<Aya::DataModel> m_pDataModel;
+
+    InsertObjectListWidget* m_pInsertObjectListWidget;
+    QPushButton* m_pInsertButton;
+
+    bool m_bInitializationRequired;
+    bool m_bRedrawRequested;
+};

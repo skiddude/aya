@@ -1,0 +1,103 @@
+add_library(Core STATIC)
+
+set(SOURCES
+  src/AyaAssert.cpp
+  src/AyaAssert.hpp
+  src/AyaBase.hpp
+  src/AyaCrash.cpp
+  src/AyaDbgInfo.cpp
+  src/AyaDbgInfo.hpp
+  src/AyaFormat.cpp
+  src/AyaFormat.hpp
+  src/AyaPlatform.hpp
+  src/AyaStrings.hpp
+  src/BaldPtr.hpp
+  src/CEvent.cpp
+  src/CEvent.hpp
+  src/CPUCount.cpp
+  src/CPUCount.hpp
+  src/Coordinator.cpp
+  src/Coordinator.hpp
+  src/Crypt.cpp
+  src/Crypt.hpp
+  src/Debug.cpp
+  src/Debug.hpp
+  src/Declarations.hpp
+  src/DenseHash.hpp
+  src/FastLog.cpp
+  src/FastLog.hpp
+  src/FastLogStream.cpp
+  src/FastLogStream.hpp
+  src/GlobalVectorItem.hpp
+  src/HardwareInfo.hpp
+  src/ImGui.cpp
+  src/ImGui.hpp
+  src/Log.cpp
+  src/Log.hpp
+  src/MathUtil.cpp
+  src/MathUtil.hpp
+  src/Memory.cpp
+  src/Memory.hpp
+  src/Nil.hpp
+  src/ProcessPerfCounter.cpp
+  src/ProcessPerfCounter.hpp
+  src/Profiler.cpp
+  src/Profiler.hpp
+  src/RegistryUtil.hpp
+  src/RunningAverage.hpp
+  src/SafeToLower.hpp
+  src/ScopedSingleton.hpp
+  src/SelectState.hpp
+  src/SimpleJSON.cpp
+  src/SimpleJSON.hpp
+  src/StreamHelpers.cpp
+  src/StringConv.cpp
+  src/StringConv.hpp
+  src/SystemUtil.cpp
+  src/SystemUtil.hpp
+  src/TaskScheduler.Job.cpp
+  src/TaskScheduler.Job.hpp
+  src/TaskScheduler.Thread.cpp
+  src/TaskScheduler.cpp
+  src/TaskScheduler.hpp
+  src/ThreadSafe.cpp
+  src/atomic.hpp
+  src/boost.cpp
+  src/callable.hpp
+  src/format_string.cpp
+  src/format_string.hpp
+  src/intrusive_ptr_target.hpp
+  src/intrusive_set.hpp
+  src/intrusive_weak_ptr.hpp
+  src/make_shared.hpp
+  src/object_pool.hpp
+  src/signal.cpp
+  src/signal.hpp
+  src/stringbuffer.hpp
+  src/threadsafe.hpp
+  src/time.cpp
+  src/time.hpp
+  src/trie.hpp
+  src/ublas_ext.hpp
+)
+
+# Platform-specific configuration
+if(AYA_OS_ANDROID)
+  list(APPEND SOURCES
+    src/ifaddrs.cpp
+    src/ifaddrs.hpp
+  )
+endif()
+
+target_include_directories(Core
+  PUBLIC
+    ${ENGINE_DIR}/core/src
+  PRIVATE
+    ${THIRD_PARTY_DIR}/BulletPhysics/src
+    ${ENGINE_DIR}/app/src
+    ${ENGINE_DIR}/3d/src
+    ${ENGINE_DIR}/gfx/src
+    ${ENGINE_DIR}/gfx/src/API/GL/glad/include
+)
+
+target_sources(Core PRIVATE ${SOURCES})

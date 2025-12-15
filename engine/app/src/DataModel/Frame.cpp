@@ -1,0 +1,162 @@
+
+
+#include "DataModel/Frame.hpp"
+#include "GUI/GuiDraw.hpp"
+#include "DataModel/GameBasicSettings.hpp"
+
+namespace Aya
+{
+const char* const sFrame = "Frame";
+const Reflection::EnumPropDescriptor<Frame, Frame::Style> prop_style("Style", category_Data, &Frame::getStyle, &Frame::setStyle);
+
+namespace Reflection
+{
+template<>
+EnumDesc<Frame::Style>::EnumDesc()
+    : EnumDescriptor("FrameStyle")
+{
+    addPair(Frame::CUSTOM_STYLE, "Custom");
+    addPair(Frame::BLUE_CHAT_STYLE, "ChatBlue");
+    addPair(Frame::ROBLOX_SQUARE_STYLE, "RobloxSquare");
+    addPair(Frame::ROBLOX_ROUND_STYLE, "RobloxRound");
+    addPair(Frame::GREEN_CHAT_STYLE, "ChatGreen");
+    addPair(Frame::RED_CHAT_STYLE, "ChatRed");
+    addPair(Frame::ROBLOX_DROPSHADOW_STYLE, "DropShadow");
+}
+} // namespace Reflection
+
+
+Frame::Frame()
+    : DescribedCreatable<Frame, GuiObject, sFrame>("Frame", false)
+    , style(Frame::CUSTOM_STYLE)
+{
+}
+
+Rect2D Frame::getChildRect2D() const
+{
+    switch (style)
+    {
+    case Frame::CUSTOM_STYLE:
+        return getRect2D();
+    case Frame::BLUE_CHAT_STYLE:
+    case Frame::GREEN_CHAT_STYLE:
+    case Frame::RED_CHAT_STYLE:
+        return Scale9Rect2D(getRect2D(), 17, 60);
+    case Frame::ROBLOX_SQUARE_STYLE:
+    case Frame::ROBLOX_ROUND_STYLE:
+    case Frame::ROBLOX_DROPSHADOW_STYLE:
+        return Scale9Rect2D(getRect2D(), 8, 21);
+    default:
+        AYAASSERT(0);
+        return getRect2D();
+    }
+}
+
+void Frame::setStyle(Style value)
+{
+    if (style != value)
+    {
+        style = value;
+        raisePropertyChanged(prop_style);
+
+        forceResize();
+    }
+}
+
+
+void Frame::render2d(Adorn* adorn)
+{
+    std::string prefix = Aya::GameBasicSettings::singleton().getVirtualVersion() >= Aya::GameBasicSettings::VERSION_2014 ? "classic/" : "";
+
+    TextureId sBlue = TextureId("ayaasset://textures/" + prefix + "ui/dialog_blue.png");
+    TextureId sGreen = TextureId("ayaasset://textures/" + prefix + "ui/dialog_green.png");
+    TextureId sRed = TextureId("ayaasset://textures/" + prefix + "ui/dialog_red.png");
+
+    TextureId sBlackSquare = TextureId("ayaasset://textures/blackBkg_square.png");
+    TextureId sBlackRound = TextureId("ayaasset://textures/blackBkg_round.png");
+    TextureId sNewSquare = TextureId("ayaasset://textures/ui/newBkg_square.png");
+
+    GuiObject* clippingObject = firstAncestorClipping();
+
+    switch (style)
+    {
+    case Frame::CUSTOM_STYLE:
+        Super::render2d(adorn);
+        break;
+    case Frame::BLUE_CHAT_STYLE:
+    {
+        if (Aya::GameBasicSettings::singleton().getVirtualVersion() >= Aya::GameBasicSettings::VERSION_2014)
+        {
+            Rect2D rect;
+            Color4 color = Color3::white();
+            render2dScale9Impl(adorn, sBlue, Vector2int16(14, 14), Vector2(60, 60), image, rect, clippingObject);
+            break;
+        }
+        else
+        {
+            Rect2D rect = Rect2D::xyxy(7, 7, 33, 33);
+            Color4 color = Color3::white();
+            render2dScale9Impl2(adorn, sBlue, image, rect, clippingObject, color);
+            break;
+        }
+    }
+    case Frame::GREEN_CHAT_STYLE:
+    {
+        if (Aya::GameBasicSettings::singleton().getVirtualVersion() >= Aya::GameBasicSettings::VERSION_2014)
+        {
+            Rect2D rect;
+            Color4 color = Color3::white();
+            render2dScale9Impl(adorn, sGreen, Vector2int16(14, 14), Vector2(60, 60), image, rect, clippingObject);
+            break;
+        }
+        else
+        {
+            Rect2D rect = Rect2D::xyxy(7, 7, 33, 33);
+            Color4 color = Color3::white();
+            render2dScale9Impl2(adorn, sGreen, image, rect, clippingObject, color);
+            break;
+        }
+    }
+    case Frame::RED_CHAT_STYLE:
+    {
+        if (Aya::GameBasicSettings::singleton().getVirtualVersion() >= Aya::GameBasicSettings::VERSION_2014)
+        {
+            Rect2D rect;
+            Color4 color = Color3::white();
+            render2dScale9Impl(adorn, sRed, Vector2int16(14, 14), Vector2(60, 60), image, rect, clippingObject);
+            break;
+        }
+        else
+        {
+            Rect2D rect = Rect2D::xyxy(7, 7, 33, 33);
+            Color4 color = Color3::white();
+            render2dScale9Impl2(adorn, sRed, image, rect, clippingObject, color);
+            break;
+        }
+    }
+    case Frame::ROBLOX_SQUARE_STYLE:
+    {
+        Rect2D rect;
+        setBackgroundTransparency(0.0f);
+        render2dScale9Impl(adorn, sBlackSquare, Vector2int16(7, 7), Vector2(14, 14), image, rect, clippingObject);
+        break;
+    }
+    case Frame::ROBLOX_ROUND_STYLE:
+    {
+        Rect2D rect;
+        setBackgroundTransparency(0.0f);
+        render2dScale9Impl(adorn, sBlackRound, Vector2int16(7, 7), Vector2(14, 14), image, rect, clippingObject);
+        break;
+    }
+    case Frame::ROBLOX_DROPSHADOW_STYLE:
+    {
+        Rect2D rect;
+        setBackgroundTransparency(0.0f);
+        render2dScale9Impl(adorn, sNewSquare, Vector2int16(10, 10), Vector2(40, 40), image, rect, clippingObject);
+        break;
+    }
+    }
+
+    renderStudioSelectionBox(adorn);
+}
+} // namespace Aya

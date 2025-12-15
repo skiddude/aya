@@ -1,0 +1,67 @@
+
+
+
+#include "Kernel/Cofm.hpp"
+#include "Kernel/Body.hpp"
+
+#include "Kernel/Constants.hpp"
+#include "Utility/Units.hpp"
+#include "Utility/Math.hpp"
+#include "Debug.hpp"
+
+namespace Aya
+{
+
+Cofm::Cofm(Body* body)
+    : body(body)
+    , dirty(true)
+{
+}
+
+void Cofm::updateIfDirty()
+{
+    if (dirty)
+    {
+        mass = body->getMass();
+
+        if (body->numChildren() == 0)
+        {
+            cofmInBody = body->getCofmOffset();
+            moment = body->getIBodyAtPoint(cofmInBody);
+
+            AYAASSERT(Math::fuzzyEq(moment,
+                Math::momentToObjectSpace(
+                    body->getIWorldAtPoint(body->getCoordinateFrame().pointToWorldSpace(cofmInBody)), body->getCoordinateFrame().rotation),
+                moment.l1Norm() * 0.01));
+        }
+        else
+        {
+            Vector3 bodyCofmOffset = body->getCofmOffset();
+            Vector3 bodyCofmInWorld = body->getCoordinateFrame().pointToWorldSpace(bodyCofmOffset); // toWorldSpace(bodyCofmOffset);
+
+            Vector3 cofmWorld = bodyCofmInWorld * body->getMass(); // Needs to transform and add offset.
+            for (int i = 0; i < body->numChildren(); ++i)
+            {
+                Body* b = body->getChild(i);
+                mass += b->getBranchMass();
+                cofmWorld += b->getBranchCofmPos() * b->getBranchMass();
+            }
+            cofmWorld = cofmWorld / mass;
+            cofmInBody = body->getCoordinateFrame().pointToObjectSpace(cofmWorld);
+
+            Matrix3 iWorldSum = body->getIWorldAtPoint(cofmWorld);
+            for (int i = 0; i < body->numChildren(); ++i)
+            {
+                iWorldSum = iWorldSum + body->getChild(i)->getBranchIWorldAtPoint(cofmWorld);
+            }
+            moment = Math::momentToObjectSpace(iWorldSum, body->getCoordinateFrame().rotation);
+        }
+
+        AYAASSERT(dirty); // concurrency issues?
+        dirty = false;
+    }
+}
+
+
+
+} // namespace Aya

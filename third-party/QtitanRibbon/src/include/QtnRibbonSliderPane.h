@@ -1,0 +1,2 @@
+#include "../ribbon/QtnRibbonSliderPane.h"
+

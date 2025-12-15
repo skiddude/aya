@@ -1,0 +1,15 @@
+#define CFG_WANG_TILES
+
+#define CFG_TEXTURE_TILING 1.0
+
+#define CFG_DIFFUSE_SCALE 1.0
+#define CFG_SPECULAR_SCALE 1.0
+#define CFG_GLOSS_SCALE 96.0
+#define CFG_REFLECTION_SCALE 0.05
+
+#define CFG_NORMAL_SHADOW_SCALE 0.1
+
+#define CFG_SPECULAR_LOD 0.8
+#define CFG_GLOSS_LOD 48.0
+
+#include "material.sc"

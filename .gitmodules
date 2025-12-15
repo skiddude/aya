@@ -1,0 +1,3 @@
+[submodule "third-party/cef"]
+	path = third-party/cef
+	url = https://github.com/iboB/cef-cmake
