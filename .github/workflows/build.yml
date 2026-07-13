@@ -18,7 +18,7 @@ jobs:
     - name: Install Qt6
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.x.x' # Fetches the latest stable Qt6
+        version: '6.8.0'
         host: 'windows'
         target: 'desktop'
         arch: 'win64_msvc2019_64' # Matches the native Windows GitHub compiler
