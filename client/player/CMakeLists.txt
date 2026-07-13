@@ -50,7 +50,7 @@ if(AYA_OS_WINDOWS)
   )
 
   set_target_properties(Player PROPERTIES WIN32_EXECUTABLE TRUE)
-  windeployqt(Player)
+  #windeployqt(Player)
 endif()
 
 target_compile_definitions(Player PRIVATE QT_NO_KEYWORDS)
