@@ -1,0 +1,52 @@
+name: Build Aya (Windows)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Install Qt6
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.x.x' # Fetches the latest stable Qt6
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64' # Matches the native Windows GitHub compiler
+        modules: 'qtwebengine'
+
+    - name: Setup vcpkg
+      shell: pwsh
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git vcpkg
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+        cd ..
+
+    - name: Configure CMake
+      shell: pwsh
+      run: |
+        mkdir build
+        cmake -B build -S . `
+          -DCMAKE_TOOLCHAIN_FILE="$pwd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
+    - name: Compile Project
+      shell: pwsh
+      run: |
+        cmake --build build --config Release --parallel
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: aya-windows-build
+        path: build/Release/
+      if: success()
