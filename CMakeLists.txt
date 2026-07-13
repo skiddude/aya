@@ -294,7 +294,7 @@ add_subdirectory(${ENGINE_DIR}/network)
 add_subdirectory(${ENGINE_DIR}/gfx)
 
 if(NOT AYA_OS_ANDROID)
-  if(AYA_OS_WINDOWS)
+  if(BUILD_STUDIO AND AYA_OS_WINDOWS)
     include(${CLIENT_DIR}/windeployqt.cmake)
   endif()
 
