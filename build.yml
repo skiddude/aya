@@ -15,13 +15,14 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    - name: Restore vcpkg Cache
-      uses: actions/cache@v4
+    - name: Install Qt6
+      uses: jurplel/install-qt-action@v3
       with:
-        path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-        key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
-        restore-keys: |
-          ${{ runner.os }}-vcpkg-
+        version: '6.x.x' # Fetches the latest stable Qt6
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64' # Matches the native Windows GitHub compiler
+        modules: 'qtwebengine'
 
     - name: Setup vcpkg
       shell: pwsh
@@ -36,15 +37,12 @@ jobs:
       run: |
         mkdir build
         cmake -B build -S . `
-          -DCMAKE_TOOLCHAIN_FILE="$pwd/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-          -DBUILD_STUDIO=OFF `
-          -DBUILD_PLAYER=ON `
-          -DBUILD_SERVER=ON
+          -DCMAKE_TOOLCHAIN_FILE="$pwd/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
     - name: Compile Project
       shell: pwsh
       run: |
-        cmake --build build --config Release --target Player --target Server --parallel
+        cmake --build build --config Release --parallel
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4

@@ -1,51 +1,96 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "aya",
-  "version": "1.0.0",
-  "builtin-baseline": "4ed84798137bcf664989fa432d41d278d7ad3b25",
+  "version-string": "1.0.0",
   "dependencies": [
-    "assimp",
-    "bgfx",
-    "boost-accumulators",
-    "boost-beast",
-    "boost-bimap",
-    "boost-circular-buffer",
-    "boost-container",
-    "boost-crc",
-    "boost-exception",
-    "boost-filesystem",
-    "boost-flyweight",
-    "boost-foreach",
-    "boost-format",
-    "boost-intrusive",
-    "boost-iostreams",
-    "boost-math",
-    "boost-pool",
-    "boost-program-options",
-    "boost-signals2",
-    "boost-system",
-    "boost-thread",
-    "boost-url",
-    "boost-uuid",
-    "cgal",
-    "curl",
-    "discord-rpc",
-    "freetype",
-    "imgui",
-    "implot",
-    "libarchive",
-    "libjpeg-turbo",
-    "libpng",
-    "libjxl",
-    "lz4",
+    "fmt",
     "openssl",
-    "opus",
-    "portaudio",
-    "pugixml",
-    "rapidjson",
-    "sdl3",
-    "vulkan",
     "zlib",
     "zstd"
-  ]
+  ],
+  "features": {
+    "server": {
+      "description": "Dependencies required to build the headless Server executable",
+      "dependencies": [
+        "boost-system",
+        "boost-thread",
+        "boost-exception",
+        "boost-program-options",
+        "boost-url",
+        "boost-chrono",
+        "curl",
+        "pugixml"
+      ]
+    },
+    "player": {
+      "description": "Core graphics and engine dependencies needed for the Player",
+      "dependencies": [
+        "vcpkg-browser-links", 
+        "assimp",
+        "bgfx",
+        "boost-filesystem",
+        "boost-system",
+        "boost-iostreams",
+        "boost-thread",
+        "boost-exception",
+        "boost-program-options",
+        "boost-url",
+        "boost-chrono",
+        "boost-container",
+        "boost-math",
+        "cgal",
+        "curl",
+        "freetype",
+        "imgui",
+        "implot",
+        "libarchive",
+        "libjpeg-turbo",
+        "libpng",
+        "libjxl",
+        "lz4",
+        "pugixml",
+        "rapidjson",
+        "sdl3"
+      ]
+    },
+    "studio": {
+      "description": "Roblox Studio tools - Inherits the core engine plus heavy Qt UI layers",
+      "dependencies": [
+        "qt6-base",
+        "qt6-webengine",
+        "qt6-declarative",
+        {
+          "name": "aya",
+          "features": [
+            "player",
+            "server"
+          ]
+        }
+      ]
+    },
+    "discord": {
+      "description": "Discord Rich Presence integration",
+      "dependencies": [
+        "discord-rpc",
+        {
+          "name": "aya",
+          "features": [
+            "player"
+          ]
+        }
+      ]
+    },
+    "voice": {
+      "description": "Voice Chat integration",
+      "dependencies": [
+        "opus",
+        "portaudio",
+        {
+          "name": "aya",
+          "features": [
+            "player"
+          ]
+        }
+      ]
+    }
+  }
 }

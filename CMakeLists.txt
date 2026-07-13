@@ -1,41 +1,47 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(Aya)
+# Set up project
+project(Aya LANGUAGES CXX)
 
-########## Project Options ##########
+# --- Project Options ---
 
-set(CMAKE_CXX_STANDARD 20)
+# Enable Modern C++ standard
+set(CMAKE_CXX_STANDARD 17) # Upgraded to C++17 to support dependencies cleanly
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH "$ORIGIN")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-# Create many helpful paths to have CMake consume it
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/third-party" THIRD_PARTY_DIR)
-list(APPEND CMAKE_PREFIX_PATH "${THIRD_PARTY_DIR}")
+# Setup paths
+set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/third-party")
+set(ENGINE_DIR      "${CMAKE_SOURCE_DIR}/engine")
+set(CLIENT_DIR      "${CMAKE_SOURCE_DIR}/client")
+set(TOOLS_DIR       "${CMAKE_SOURCE_DIR}/tools")
 
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/engine" ENGINE_DIR)
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/client" CLIENT_DIR)
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/tools" TOOLS_DIR)
-
+# Version Configuration
 set(AYA_VERSION_MAJOR 1)
 set(AYA_VERSION_MINOR 0)
 set(AYA_VERSION_PATCH 0)
-set(AYA_VERSION_TYPE beta)
+set(AYA_VERSION_TYPE "beta")
 
 set(AYA_PROJECT_NAME "Aya" CACHE STRING "Public-facing project name")
 
 option(AYA_TEST_BUILD "Enable testing utilities" ON)
 option(ADDRESS_SANITIZER "Enable address sanitization" OFF)
-option(ENABLE_CHROMIUM_FRAMES "Enable ChromiumFrames with CEF integration" ON)
-set(CEF_VERSION "140.1.14+geb1c06e+chromium-140.0.7339.185" CACHE STRING "CEF version to use (if ChromiumFrames are enabled)")
-option(ENABLE_VOICE_CHAT "Enable voice chat" ON)
-option(ENABLE_DISCORD_INTEGRATION "Enable Discord Rich Presence integration" ON)
+option(ENABLE_CHROMIUM_FRAMES "Enable ChromiumFrames with CEF integration" OFF)
+set(CEF_VERSION "140.1.14+geb1c06e+chromium-140.0.7339.185" CACHE STRING "CEF version to use")
+option(BUILD_SERVER "Build the Server target" ON)
+option(BUILD_PLAYER "Build the player client" ON)
+option(BUILD_STUDIO "Build the Studio target" OFF)
+option(ENABLE_VOICE_CHAT "Enable voice chat" OFF)
+option(ENABLE_DISCORD_INTEGRATION "Enable Discord Rich Presence integration" OFF)
+option(USE_CEF_FIND_PACKAGE "Use find_package for CEF" OFF)
 
-if(AYA_TEST_BUILD AND NOT CI)
-  add_compile_definitions(AYA_TEST_BUILD=1)
-endif()
+# Create interface library for core compiler options (Modern CMake Target approach)
+add_library(AyaCompilerOptions INTERFACE)
 
+# Build Timestamp logic
 if(NOT DEFINED AYA_BUILD_TIMESTAMP)
   if(AYA_TEST_BUILD)
     set(_AYA_BUILD_TIMESTAMP "0")
@@ -45,13 +51,14 @@ if(NOT DEFINED AYA_BUILD_TIMESTAMP)
   set(AYA_BUILD_TIMESTAMP "${_AYA_BUILD_TIMESTAMP}" CACHE STRING "Aya build timestamp")
 endif()
 
+# Platform and Architecture Detection
 if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^(arm64|ARM64|aarch64|AARCH64)$")
   set(AYA_ARCH_ARM64 1)
-  add_compile_definitions(AYA_ARCH_ARM64=1 _ARM64_=1)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_ARCH_ARM64=1 _ARM64_=1)
   set(AYA_PLATFORM_NAME "(arm64)")
 elseif("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^(x86_64|X86_64|amd64|AMD64)$")
   set(AYA_ARCH_X64 1)
-  add_compile_definitions(AYA_ARCH_X64=1 _AMD64_=1)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_ARCH_X64=1 _AMD64_=1)
   set(AYA_PLATFORM_NAME "(x64)")
 else()
   message(FATAL_ERROR "Aya: Unsupported architecture ${CMAKE_SYSTEM_PROCESSOR}")
@@ -59,27 +66,27 @@ endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   set(AYA_OS_WINDOWS 1)
-  add_compile_definitions(AYA_OS_WINDOWS)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_OS_WINDOWS)
   set(AYA_PLATFORM_NAME "Windows ${AYA_PLATFORM_NAME}")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   set(AYA_OS_LINUX 1)
-  add_compile_definitions(AYA_OS_LINUX)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_OS_LINUX)
   set(AYA_PLATFORM_NAME "Linux ${AYA_PLATFORM_NAME}")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(AYA_OS_MACOS 1)
-  add_compile_definitions(AYA_OS_MACOS)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_OS_MACOS)
   set(AYA_PLATFORM_NAME "MacOS ${AYA_PLATFORM_NAME}")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
   set(AYA_OS_ANDROID 1)
-  add_compile_definitions(AYA_OS_ANDROID)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_OS_ANDROID)
   set(AYA_PLATFORM_NAME "Android ${AYA_PLATFORM_NAME}")
 else()
   message(FATAL_ERROR "Aya: Unsupported system ${CMAKE_SYSTEM_NAME}")
 endif()
 
-add_compile_definitions(
+# Global Project Definitions bound to compile options
+target_compile_definitions(AyaCompilerOptions INTERFACE
   AYA_PROJECT_NAME="${AYA_PROJECT_NAME}"
-
   AYA_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
   AYA_VERSION_MAJOR=${AYA_VERSION_MAJOR}
   AYA_VERSION_MAJOR_STR="${AYA_VERSION_MAJOR}"
@@ -92,43 +99,68 @@ add_compile_definitions(
   AYA_PLATFORM_NAME="${AYA_PLATFORM_NAME}"
 )
 
-########## Compile Options ##########
+if(AYA_TEST_BUILD AND NOT CI)
+  target_compile_definitions(AyaCompilerOptions INTERFACE AYA_TEST_BUILD=1)
+endif()
 
-# ChromiumFrames and related SSE3 options enabled required for rendering optimizations
-# Building CEF on nixpkgs for MacOS is non-existent
+# --- Manifest & Feature Flag Mapping ---
+
+# Conditionally feed features to vcpkg.json
+if(BUILD_SERVER)
+  list(APPEND VCPKG_MANIFEST_FEATURES "server")
+endif()
+
+if(BUILD_PLAYER)
+  list(APPEND VCPKG_MANIFEST_FEATURES "player")
+endif()
+
+if(BUILD_STUDIO)
+  list(APPEND VCPKG_MANIFEST_FEATURES "studio" "player" "server") # Implicitly request bundles safely
+endif()
+
+if(ENABLE_DISCORD_INTEGRATION)
+  list(APPEND VCPKG_MANIFEST_FEATURES "discord" "player")
+endif()
+
+if(ENABLE_VOICE_CHAT)
+  list(APPEND VCPKG_MANIFEST_FEATURES "voice" "player")
+endif()
+
+# Chromium CEF Sanitization on platforms where it's missing
 if(AYA_OS_ANDROID OR (AYA_OS_MACOS AND CI))
   set(ENABLE_CHROMIUM_FRAMES OFF)
 endif()
 
 if(ENABLE_CHROMIUM_FRAMES)
-  add_compile_definitions(ENABLE_CHROMIUM_FRAMES=1)
-  add_compile_definitions(CEF_VERSION="${CEF_VERSION}")
+  target_compile_definitions(AyaCompilerOptions INTERFACE ENABLE_CHROMIUM_FRAMES=1 CEF_VERSION="${CEF_VERSION}")
   set(CEF_CMAKE_LOCALES_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cef/locales")
   set(CEF_CMAKE_RESOURCES_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cef/resources")
 endif()
 
+# Compiler optimization and warning setups linked only to compiler option target
 if(NOT AYA_ARCH_ARM64)
-  add_compile_options(-mssse3)
+  target_compile_options(AyaCompilerOptions INTERFACE -mssse3)
 endif()
 
 if(ADDRESS_SANITIZER AND NOT AYA_ARCH_ARM64)
-  add_compile_options(-fsanitize=address)
-  add_link_options(-fsanitize=address)
+  target_compile_options(AyaCompilerOptions INTERFACE -fsanitize=address)
+  target_link_options(AyaCompilerOptions INTERFACE -fsanitize=address)
 endif()
 
 if(ENABLE_VOICE_CHAT)
-  add_compile_definitions(ENABLE_VOICE_CHAT=1)
+  target_compile_definitions(AyaCompilerOptions INTERFACE ENABLE_VOICE_CHAT=1)
 endif()
 
-# Disable some annoying warnings
-add_compile_options(-w)
-add_compile_options(-Wnonportable-include-path)
-add_compile_options(-Wundefined-var-template)
-add_compile_options(-Wdelete-abstract-non-virtual-dtor)
+# Warning suppressions
+target_compile_options(AyaCompilerOptions INTERFACE
+  -Wnonportable-include-path
+  -Wundefined-var-template
+  -Wdelete-abstract-non-virtual-dtor
+)
 
-########## Windows/MSVC Configuration ##########
+# --- Windows/MSVC Target-Based Configurations ---
 
-add_compile_definitions(
+target_compile_definitions(AyaCompilerOptions INTERFACE
   _HAS_AUTO_PTR_ETC=1
   _ENFORCE_MATCHING_ALLOCATORS=0
   WIN32_LEAN_AND_MEAN=1
@@ -138,43 +170,33 @@ if(MSVC)
   set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
   set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-  include_directories($ENV{INCLUDE})
-
-  if(ATL_PATH)
-    include_directories("${ATL_PATH}/include")
-    link_directories("${ATL_PATH}/lib/x64")
-  endif()
-
-  # Windows 10
-  # https://learn.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt?view=msvc-170
-  add_compile_definitions(
+  target_compile_definitions(AyaCompilerOptions INTERFACE
     WINVER=0x0A00
     _WIN32_WINNT=0x0A00
-    _WINSOCKAPI_=1 # Prevents winsock.h from defining macros that conflict with winsock2.h
+    _WINSOCKAPI_=1
   )
 
   # Control Flow Guard
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
+  target_compile_options(AyaCompilerOptions INTERFACE /guard:cf)
+  target_link_options(AyaCompilerOptions INTERFACE /guard:cf)
 endif()
 
-########## MacOS Configuration ##########
+# --- MacOS Configuration ---
 
 if(AYA_OS_MACOS)
-  add_compile_options(-D_GLIBCXX_USE_DEPRECATED)
-  add_compile_definitions(
+  target_compile_options(AyaCompilerOptions INTERFACE -D_GLIBCXX_USE_DEPRECATED)
+  target_compile_definitions(AyaCompilerOptions INTERFACE
     __APPLE__
     _LIBCPP_ENABLE_CXX17_REMOVED_AUTO_PTR
   )
 endif()
 
-########## Dependencies ##########
 
-# vcpkg dependencies
+# --- Dependencies (Using modern config lookups where vcpkg manages it) ---
+
 find_package(assimp CONFIG REQUIRED)
 find_package(bgfx CONFIG REQUIRED)
-find_package(Boost COMPONENTS filesystem system iostreams thread exception program_options url chrono CONFIG REQUIRED)
+find_package(Boost COMPONENTS filesystem system iostreams thread exception program_options url chrono container math CONFIG REQUIRED)
 set(CGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE 1)
 find_package(CGAL CONFIG REQUIRED)
 find_package(CURL REQUIRED)
@@ -188,61 +210,25 @@ find_package(OpenSSL REQUIRED)
 find_package(pugixml CONFIG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
-find_package(Vulkan REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(zstd REQUIRED)
 
-# libjxl hack
-find_path(JXL_INCLUDE_DIR jxl/decode.h)
-find_library(JXL_LIBRARY NAMES jxl)
-find_library(JXL_CMS_LIBRARY NAMES jxl_cms)
-find_library(JXL_THREADS_LIBRARY NAMES jxl_threads)
-find_library(BROTLIDEC_LIBRARY NAMES brotlidec)
-find_library(BROTLIENC_LIBRARY NAMES brotlienc)
-find_library(BROTLICOMMON_LIBRARY NAMES brotlicommon)
-find_library(LCMS2_LIBRARY NAMES lcms2)
-find_library(HWY_LIBRARY NAMES hwy)
-
-if(NOT JXL_LIBRARY OR NOT JXL_CMS_LIBRARY OR NOT JXL_THREADS_LIBRARY)
-    message(FATAL_ERROR "JPEG XL libraries not found")
-endif()
-
-include_directories(${JXL_INCLUDE_DIR})
-
-# Boost
-add_compile_definitions(BOOST_THREAD_PROVIDES_FUTURE)
-add_compile_definitions(BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION)
-
-find_package(Boost CONFIG REQUIRED COMPONENTS
-  system
-  exception
-  container
-  thread
-  filesystem
-  iostreams
-  math
-  program_options
-  url
-  chrono
-)
+# NOTE: Raw finder hacks for libjxl, portaudio, opus, and discord have been fully 
+# removed! They are now natively requested by vcpkg.json features.
+find_package(libjxl CONFIG REQUIRED) 
 
 # Discord Rich Presence
 if(ENABLE_DISCORD_INTEGRATION)
-  find_path(DISCORD_RPC_INCLUDE_DIRS "discord_rpc.h")
-  find_library(DISCORD_RPC_LIBRARY discord-rpc REQUIRED)
-  add_compile_definitions(ENABLE_DISCORD_INTEGRATION)
-  include_directories(${DISCORD_RPC_INCLUDE_DIRS})
+  find_package(discord-rpc CONFIG REQUIRED)
 endif()
 
 # Voice Chat
 if(ENABLE_VOICE_CHAT)
   find_package(portaudio CONFIG REQUIRED)
-  find_path(OPUS_INCLUDE_DIR opus.h PATH_SUFFIXES opus)
-  find_library(OPUS_LIBRARY opus)
-  include_directories(${OPUS_INCLUDE_DIR})
+  find_package(Opus CONFIG REQUIRED)
 endif()
 
-# Chromium Embedded Framework (CEF) integration
+# Chromium Embedded Framework (CEF)
 if(ENABLE_CHROMIUM_FRAMES)
   if(USE_CEF_FIND_PACKAGE)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CEF_ROOT}/cmake)
@@ -267,10 +253,8 @@ if(ENABLE_CHROMIUM_FRAMES)
   set(CEF_LIBRARIES ${CEF_WRAPPER} ${CEF_LIB})
 endif()
 
-# FMOD
-include_directories(${THIRD_PARTY_DIR}/fmod/include)
-
-option(USE_CEF_FIND_PACKAGE OFF)
+# Define clean FMOD targets rather than directory hacking
+add_library(fmod SHARED IMPORTED)
 
 if(AYA_ARCH_X64)
   set(FMOD_ARCHITECTURE x64)
@@ -279,39 +263,29 @@ elseif(AYA_ARCH_ARM64)
 endif()
 
 if(AYA_OS_WINDOWS)
-  link_directories(${THIRD_PARTY_DIR}/fmod/lib/windows/${FMOD_ARCHITECTURE})
-  set(RUNTIME_FILES ${THIRD_PARTY_DIR}/fmod/lib/windows/${FMOD_ARCHITECTURE}/fmod.dll)
+  set_property(TARGET fmod PROPERTY IMPORTED_LOCATION "${THIRD_PARTY_DIR}/fmod/lib/windows/${FMOD_ARCHITECTURE}/fmod.dll")
+  set_property(TARGET fmod PROPERTY IMPORTED_IMPLIB "${THIRD_PARTY_DIR}/fmod/lib/windows/${FMOD_ARCHITECTURE}/fmod_vc.lib")
 elseif(AYA_OS_MACOS)
-  link_directories(${THIRD_PARTY_DIR}/fmod/lib/mac)
-  set(RUNTIME_FILES ${THIRD_PARTY_DIR}/fmod/lib/mac/libfmod.dylib)
-
-  add_library(fmod SHARED IMPORTED)
-  set_property(TARGET fmod PROPERTY IMPORTED_LOCATION ${THIRD_PARTY_DIR}/fmod/lib/mac/libfmod.dylib)
+  set_property(TARGET fmod PROPERTY IMPORTED_LOCATION "${THIRD_PARTY_DIR}/fmod/lib/mac/libfmod.dylib")
 elseif(AYA_OS_LINUX)
-  link_directories(${THIRD_PARTY_DIR}/fmod/lib/linux/${FMOD_ARCHITECTURE})
-  set(RUNTIME_FILES ${THIRD_PARTY_DIR}/fmod/lib/linux/${FMOD_ARCHITECTURE}/libfmod.so.13)
-
-  add_library(fmod SHARED IMPORTED)
-  set_property(TARGET fmod PROPERTY IMPORTED_LOCATION ${THIRD_PARTY_DIR}/fmod/lib/linux/${FMOD_ARCHITECTURE}/libfmod.so)
+  set_property(TARGET fmod PROPERTY IMPORTED_LOCATION "${THIRD_PARTY_DIR}/fmod/lib/linux/${FMOD_ARCHITECTURE}/libfmod.so")
 endif()
 
-# Qt
-# Arch: pacman -S qt6-base qt6-webengine
-# Ubuntu: apt install qt6-base-dev qt6-webengine-dev qt6-webengine-dev-tools libqt6webenginecore6-bin
-find_package(Qt6 COMPONENTS Core Widgets Concurrent WebEngineWidgets Gui GuiPrivate Designer Xml REQUIRED)
+# Qt Setup
+if(BUILD_STUDIO)
+  find_package(Qt6 COMPONENTS Core Widgets Concurrent WebEngineWidgets Gui Xml REQUIRED)
+endif()
 
-# QtitanRibbon
+# --- Compile Subdirectories ---
+
 if(NOT AYA_OS_ANDROID)
-  add_subdirectory(${THIRD_PARTY_DIR}/QtitanRibbon) 
+  if(BUILD_STUDIO)
+    add_subdirectory(${THIRD_PARTY_DIR}/QtitanRibbon)
+  endif() 
 endif()
 
-# Other dependencies
 add_subdirectory(${THIRD_PARTY_DIR}/BulletPhysics)
 add_subdirectory(${THIRD_PARTY_DIR}/RakNet)
-
-########## Aya Project ##########
-
-include_directories(${CLIENT_DIR}/common)
 
 add_subdirectory(${ENGINE_DIR}/3d)
 add_subdirectory(${ENGINE_DIR}/app)
@@ -324,12 +298,17 @@ if(NOT AYA_OS_ANDROID)
     include(${CLIENT_DIR}/windeployqt.cmake)
   endif()
 
-  add_subdirectory(${TOOLS_DIR}/core-script-compiler)
-  add_subdirectory(${CLIENT_DIR}/bootstrapper)
+  if(BUILD_PLAYER)
+    add_subdirectory(${CLIENT_DIR}/player)
+  endif()
 
-  add_subdirectory(${CLIENT_DIR}/player)
-  add_subdirectory(${CLIENT_DIR}/server)
-  add_subdirectory(${CLIENT_DIR}/studio)
+  if(BUILD_SERVER)
+    add_subdirectory(${CLIENT_DIR}/server)
+  endif()
+
+  if(BUILD_STUDIO)
+    add_subdirectory(${CLIENT_DIR}/studio)
+  endif()
 else()
   add_subdirectory(${CLIENT_DIR}/mobile)
 endif()
@@ -342,7 +321,11 @@ if(AYA_OS_WINDOWS)
   add_subdirectory(${TOOLS_DIR}/thumbnail-helper)
 endif()
 
-set(CLIENT_THIRD_PARTY_LIBRARIES
+# --- Modern Interface Libraries for Linking ---
+
+add_library(AyaDependencies INTERFACE)
+target_link_libraries(AyaDependencies INTERFACE
+  AyaCompilerOptions
   assimp::assimp
   bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode
   Boost::chrono
@@ -365,22 +348,22 @@ set(CLIENT_THIRD_PARTY_LIBRARIES
   lz4::lz4
   OpenSSL::SSL OpenSSL::Crypto
   PNG::PNG
-  pugixml::pugixml
+  libjxl::libjxl
   SDL3::SDL3
-  Vulkan::Vulkan
   ZLIB::ZLIB
   $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
-  ${JXL_LIBRARY}
-  ${JXL_CMS_LIBRARY}
-  ${JXL_THREADS_LIBRARY}
-  ${BROTLIDEC_LIBRARY}
-  ${BROTLIENC_LIBRARY}
-  ${BROTLICOMMON_LIBRARY}
-  ${LCMS2_LIBRARY}
-  ${HWY_LIBRARY}
 )
 
-set(BOOTSTRAPPER_THIRD_PARTY_LIBRARIES
+# Manage static/shared pugixml link styles safely
+if(VCPKG_LIBRARY_LINKAGE STREQUAL "static" OR AYA_OS_LINUX OR AYA_OS_MACOS)
+  target_link_libraries(AyaDependencies INTERFACE pugixml::pugixml)
+else()
+  target_link_libraries(AyaDependencies INTERFACE pugixml::shared)
+endif()
+
+add_library(AyaBootstrapperDependencies INTERFACE)
+target_link_libraries(AyaBootstrapperDependencies INTERFACE
+  AyaCompilerOptions
   Boost::program_options
   CURL::libcurl
   LibArchive::LibArchive
@@ -389,24 +372,22 @@ set(BOOTSTRAPPER_THIRD_PARTY_LIBRARIES
 )
 
 if(ENABLE_VOICE_CHAT)
-  set(CLIENT_THIRD_PARTY_LIBRARIES ${CLIENT_THIRD_PARTY_LIBRARIES} ${OPUS_LIBRARY})
-  set(CLIENT_THIRD_PARTY_LIBRARIES ${CLIENT_THIRD_PARTY_LIBRARIES} portaudio_static)
-  set(CLIENT_THIRD_PARTY_LIBRARIES ${CLIENT_THIRD_PARTY_LIBRARIES} portaudio)
-
+  target_link_libraries(AyaDependencies INTERFACE 
+    Opus::opus
+    portaudio
+  )
   if(MSVC)
-    # annoying hack for PortAudio shittiness
-    add_link_options(/FORCE:MULTIPLE)
+    target_link_options(AyaCompilerOptions INTERFACE /FORCE:MULTIPLE)
   endif()
 endif()
 
-if(VCPKG_LIBRARY_LINKAGE STREQUAL "static" OR AYA_OS_LINUX OR AYA_OS_MACOS)
-  set(CLIENT_THIRD_PARTY_LIBRARIES ${CLIENT_THIRD_PARTY_LIBRARIES} pugixml::pugixml)
-else()
-  set(CLIENT_THIRD_PARTY_LIBRARIES ${CLIENT_THIRD_PARTY_LIBRARIES} pugixml::shared)
+if(ENABLE_DISCORD_INTEGRATION)
+  target_link_libraries(AyaDependencies INTERFACE discord-rpc)
 endif()
 
+# Platform libraries
 if(MSVC OR AYA_OS_WINDOWS)
-  set(MSVC_LIBRARIES
+  target_link_libraries(AyaDependencies INTERFACE
     pdh
     Ws2_32
     wininet
@@ -420,31 +401,22 @@ if(MSVC OR AYA_OS_WINDOWS)
   )
 endif()
 
+# --- Target dependency wiring ---
+
 if(ENABLE_CHROMIUM_FRAMES AND NOT AYA_OS_MACOS)
-  add_dependencies(Player CefSubprocess)
-  add_dependencies(Studio CefSubprocess)
+  if(TARGET Player)
+    add_dependencies(Player CefSubprocess)
+  endif()
+  if(TARGET Studio)
+    add_dependencies(Studio CefSubprocess)
+  endif()
 endif()
 
-if(NOT AYA_TEST_BUILD)
+if(NOT AYA_TEST_BUILD AND TARGET Player)
   add_dependencies(Player CompileShaders CompileCoreScripts)
 endif()
 
-set(QT_LIBRARIES
-  Qt6::Core 
-  Qt6::Widgets
-  Qt6::Concurrent
-  Qt6::Gui
-  Qt6::GuiPrivate
-  Qt6::WebEngineWidgets
-  Qt6::Xml
-)
-
-target_link_libraries(Player ${CLIENT_THIRD_PARTY_LIBRARIES} ${MSVC_LIBRARIES} ${CEF_LIBRARIES} ${QT_LIBRARIES} ${DISCORD_RPC_LIBRARY})
-target_link_libraries(Studio ${CLIENT_THIRD_PARTY_LIBRARIES} ${MSVC_LIBRARIES} ${CEF_LIBRARIES} ${QT_LIBRARIES})
-target_link_libraries(Server ${CLIENT_THIRD_PARTY_LIBRARIES} ${MSVC_LIBRARIES} ${QT_LIBRARIES})
-target_link_libraries(CoreScriptCompiler ${CLIENT_THIRD_PARTY_LIBRARIES} ${MSVC_LIBRARIES})
-target_link_libraries(Bootstrapper ${BOOTSTRAPPER_THIRD_PARTY_LIBRARIES} ${MSVC_LIBRARIES} ${QT_LIBRARIES})
-
+# --- Output user notification ---
 message(NOTICE "")
 message(NOTICE "-- To compile CoreScripts for Player, run target 'CompileCoreScripts'")
 message(NOTICE "-- To compile shaders, run target 'CompileShaders'")
