@@ -24,7 +24,6 @@
     "player": {
       "description": "Core graphics and engine dependencies needed for the Player",
       "dependencies": [
-        "vcpkg-browser-links", 
         "assimp",
         "bgfx",
         "boost-filesystem",

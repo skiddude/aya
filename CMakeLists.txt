@@ -1,33 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
 
-option(BUILD_SERVER "Build the Server target" ON)
-option(BUILD_PLAYER "Build the player client" ON)
-option(BUILD_STUDIO "Build the Studio target" OFF)
-option(ENABLE_VOICE_CHAT "Enable voice chat" OFF)
-option(ENABLE_DISCORD_INTEGRATION "Enable Discord Rich Presence integration" OFF)
-
-# 2. Map options to vcpkg features BEFORE the project() call
-if(BUILD_SERVER)
-  list(APPEND VCPKG_MANIFEST_FEATURES "server")
-endif()
-
-if(BUILD_PLAYER)
-  list(APPEND VCPKG_MANIFEST_FEATURES "player")
-endif()
-
-if(BUILD_STUDIO)
-  list(APPEND VCPKG_MANIFEST_FEATURES "studio" "player" "server") # Safely bundle
-endif()
-
-if(ENABLE_DISCORD_INTEGRATION)
-  list(APPEND VCPKG_MANIFEST_FEATURES "discord" "player")
-endif()
-
-if(ENABLE_VOICE_CHAT)
-  list(APPEND VCPKG_MANIFEST_FEATURES "voice" "player")
-endif()
-
-
 # Set up project
 project(Aya LANGUAGES CXX)
 
@@ -59,6 +31,11 @@ option(AYA_TEST_BUILD "Enable testing utilities" ON)
 option(ADDRESS_SANITIZER "Enable address sanitization" OFF)
 option(ENABLE_CHROMIUM_FRAMES "Enable ChromiumFrames with CEF integration" OFF)
 set(CEF_VERSION "140.1.14+geb1c06e+chromium-140.0.7339.185" CACHE STRING "CEF version to use")
+option(BUILD_SERVER "Build the Server target" ON)
+option(BUILD_PLAYER "Build the player client" ON)
+option(BUILD_STUDIO "Build the Studio target" OFF)
+option(ENABLE_VOICE_CHAT "Enable voice chat" OFF)
+option(ENABLE_DISCORD_INTEGRATION "Enable Discord Rich Presence integration" OFF)
 option(USE_CEF_FIND_PACKAGE "Use find_package for CEF" OFF)
 
 # Create interface library for core compiler options (Modern CMake Target approach)
